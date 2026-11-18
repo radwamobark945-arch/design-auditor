@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Auditor Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{--bg:#07070b;--card:rgba(255,255,255,.04);--line:rgba(255,255,255,.09)}
+  body{font-family:'Inter','Cairo',sans-serif;background:var(--bg);color:#f4f4f5;
+    background-image:radial-gradient(900px 500px at 85% -10%,rgba(99,102,241,.22),transparent 60%),radial-gradient(700px 400px at 5% 10%,rgba(6,182,212,.14),transparent 60%);
+    background-attachment:fixed}
+  .glass{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;backdrop-filter:blur(14px)}
+  .chip{background:rgba(255,255,255,.06);border:1px solid var(--line)}
+  .mono{direction:ltr;text-align:left;font-family:'JetBrains Mono',monospace}
+  .checker{background-image:linear-gradient(45deg,#14141b 25%,transparent 25%),linear-gradient(-45deg,#14141b 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#14141b 75%),linear-gradient(-45deg,transparent 75%,#14141b 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+  .btn{background:linear-gradient(135deg,#6366f1,#06b6d4);box-shadow:0 8px 24px -8px rgba(99,102,241,.7);transition:.2s}
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+  .tab-on{background:rgba(99,102,241,.25);border:1px solid rgba(99,102,241,.5);color:#fff}
+  .ring{transition:stroke-dashoffset .9s ease,stroke .3s}
+  .fade{animation:f .35s ease}@keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="sticky top-0 z-30 border-b border-white/10 bg-[#07070b]/70 backdrop-blur-xl">
+  <div class="max-w-[1400px] mx-auto px-4 h-16 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl btn flex items-center justify-center text-lg">✦</div>
+      <div>
+        <h1 class="font-extrabold text-base leading-tight"><span data-i="title"></span> <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 align-middle">PRO</span></h1>
+        <p class="text-[11px] text-zinc-400 hidden sm:block" data-i="subtitle"></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div id="badge" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border"><span id="dot" class="w-2 h-2 rounded-full"></span><span id="badgeText"></span></div>
+      <button onclick="toggleLang()" id="langBtn" class="chip px-3 py-2 rounded-xl text-xs font-bold hover:bg-white/10">EN</button>
+      <button onclick="$('drawer').classList.toggle('hidden')" class="chip px-3.5 py-2 rounded-xl text-xs font-semibold hover:bg-white/10" data-i="settings"></button>
+    </div>
+  </div>
+  <div id="drawer" class="hidden border-t border-white/10 px-4 py-4">
+    <div class="max-w-[1400px] mx-auto grid lg:grid-cols-2 gap-4">
+      <div class="glass !p-4">
+        <label class="block text-xs font-bold mb-1" data-i="keyLabel"></label>
+        <p class="text-[11px] text-zinc-400 mb-2" data-i="keyHint"></p>
+        <div class="flex gap-2">
+          <input type="password" id="apiKey" class="mono flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500" placeholder="AIza... / AQ...">
+          <button onclick="saveSettings()" class="btn px-4 py-2 rounded-lg text-xs font-bold" data-i="save"></button>
+          <button onclick="clearKey()" class="chip px-3 py-2 rounded-lg text-xs" data-i="clear"></button>
+        </div>
+      </div>
+      <div class="glass !p-4">
+        <label class="block text-xs font-bold mb-1" data-i="sheetsLabel"></label>
+        <p class="text-[11px] text-zinc-400 mb-2" data-i="sheetsHint"></p>
+        <div class="flex gap-2">
+          <input type="text" id="sheetsUrl" class="mono flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-cyan-500" placeholder="https://script.google.com/.../exec">
+          <button onclick="saveSettings()" class="btn px-4 py-2 rounded-lg text-xs font-bold" data-i="save"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="errorBox" class="hidden max-w-[1400px] mx-auto px-4 mt-4">
+  <div class="flex items-start justify-between gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/40 text-rose-200 text-xs">
+    <div class="min-w-0"><b data-i="error"></b><span id="errorText" class="mono block mt-1 break-words"></span></div>
+    <button onclick="$('errorBox').classList.add('hidden')" class="chip px-2.5 py-1 rounded-lg shrink-0" data-i="close"></button>
+  </div>
+</div>
+
+<main class="max-w-[1400px] mx-auto px-4 py-6 grid lg:grid-cols-12 gap-6">
+  <section class="lg:col-span-5 flex flex-col gap-5">
+    <div class="glass flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-sm" data-i="zone"></h2>
+        <span id="meta" class="chip mono text-[11px] text-zinc-400 px-2.5 py-1 rounded-lg"></span>
+      </div>
+      <div id="dropZone" onclick="fileInput.click()" class="checker cursor-pointer rounded-2xl border-2 border-dashed border-white/15 hover:border-indigo-400 min-h-[300px] flex items-center justify-center p-4 transition">
+        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="if(this.files[0])processFile(this.files[0])">
+        <div id="placeholder" class="text-center p-6">
+          <div class="w-14 h-14 mx-auto mb-3 rounded-2xl chip flex items-center justify-center text-2xl">⇪</div>
+          <p class="text-sm font-bold" data-i="dropTitle"></p>
+          <p class="text-xs text-zinc-400 mt-1" data-i="dropHint"></p>
+        </div>
+        <img id="preview" class="hidden max-h-[360px] w-auto object-contain rounded-xl shadow-2xl" alt="">
+      </div>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 mb-1.5" data-i="category"></label>
+          <select id="designContext" class="w-full chip rounded-xl px-3 py-2.5 text-xs font-semibold bg-[#0d0d14]">
+            <option value="Social Media Ad" data-i="c1"></option>
+            <option value="Photo Manipulation" data-i="c2"></option>
+            <option value="UI/UX Design" data-i="c3"></option>
+            <option value="Print & Poster" data-i="c4"></option>
+            <option value="Brand Identity" data-i="c5"></option>
+          </select>
+        </div>
+        <div class="flex items-end"><button onclick="runAnalysis()" class="btn w-full py-2.5 rounded-xl font-bold text-sm" data-i="analyze"></button></div>
+      </div>
+    </div>
+    <div class="glass">
+      <h3 class="text-xs font-bold text-zinc-300 mb-3" data-i="samples"></h3>
+      <div class="grid grid-cols-3 gap-2.5">
+        <button onclick="loadPreset('flawed')" class="chip p-2.5 rounded-xl hover:bg-white/10 text-start"><div class="h-12 rounded-lg bg-gradient-to-br from-orange-500 to-red-700 mb-2"></div><p class="text-[11px] font-bold" data-i="s1"></p></button>
+        <button onclick="loadPreset('glass')" class="chip p-2.5 rounded-xl hover:bg-white/10 text-start"><div class="h-12 rounded-lg bg-gradient-to-br from-indigo-900 via-purple-900 to-cyan-700 mb-2"></div><p class="text-[11px] font-bold" data-i="s2"></p></button>
+        <button onclick="loadPreset('swiss')" class="chip p-2.5 rounded-xl hover:bg-white/10 text-start"><div class="h-12 rounded-lg bg-[#f4f1ea] mb-2"></div><p class="text-[11px] font-bold" data-i="s3"></p></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="lg:col-span-7 flex flex-col gap-4">
+    <div class="glass !p-1.5 flex items-center gap-1.5">
+      <button onclick="switchTab('audit')" id="tab-audit" class="flex-1 py-2.5 rounded-xl text-xs font-bold" data-i="tab1"></button>
+      <button onclick="switchTab('style')" id="tab-style" class="flex-1 py-2.5 rounded-xl text-xs font-bold" data-i="tab2"></button>
+      <button onclick="switchTab('prompts')" id="tab-prompts" class="flex-1 py-2.5 rounded-xl text-xs font-bold" data-i="tab3"></button>
+      <button onclick="saveToSheets()" class="px-3.5 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold" data-i="sheetsBtn"></button>
+    </div>
+
+    <div id="loading" class="hidden glass text-center py-14">
+      <div class="w-12 h-12 mx-auto rounded-full border-4 border-indigo-500/20 border-t-indigo-400 animate-spin"></div>
+      <h3 class="font-bold mt-4" data-i="loading"></h3>
+    </div>
+
+    <div id="panel-audit" class="flex flex-col gap-4 fade">
+      <div class="glass flex items-center gap-5">
+        <div class="relative w-24 h-24 shrink-0">
+          <svg viewBox="0 0 100 100" class="w-24 h-24 -rotate-90">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
+            <circle id="ring" class="ring" cx="50" cy="50" r="42" fill="none" stroke="#6366f1" stroke-width="9" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center"><span id="score" class="mono text-2xl font-extrabold">--</span><span class="text-[10px] text-zinc-400">/ 100</span></div>
+        </div>
+        <div class="min-w-0">
+          <span class="text-[11px] font-semibold text-indigo-300" data-i="scoreLabel"></span>
+          <h3 id="headline" class="font-bold text-base mt-0.5"></h3>
+          <p id="summary" class="text-xs text-zinc-400 mt-1 leading-relaxed"></p>
+        </div>
+      </div>
+
+      <div class="glass">
+        <div class="flex items-center justify-between mb-3"><h4 class="font-bold text-sm text-amber-300">☀ <span data-i="lighting"></span></h4><span id="lightDir" class="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20"></span></div>
+        <div id="lightingList" class="space-y-2 text-xs text-zinc-300"></div>
+      </div>
+
+      <div class="glass">
+        <div class="flex items-center justify-between mb-3"><h4 class="font-bold text-sm text-rose-300">✎ <span data-i="spelling"></span></h4><span id="spellCount" class="text-[11px] px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20"></span></div>
+        <div class="overflow-x-auto"><table class="w-full text-start text-xs">
+          <thead><tr class="border-b border-white/10 text-[11px] text-zinc-400"><th class="py-2 px-3 text-start" data-i="written"></th><th class="py-2 px-3 text-start" data-i="fix"></th><th class="py-2 px-3 text-start" data-i="type"></th></tr></thead>
+          <tbody id="spellBody"></tbody></table></div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="glass"><h4 class="font-bold text-sm text-cyan-300 mb-3" data-i="comp"></h4><ul id="compList" class="space-y-2 text-xs text-zinc-300 list-disc list-inside"></ul></div>
+        <div class="glass"><h4 class="font-bold text-sm text-purple-300 mb-3" data-i="typo"></h4><ul id="typoList" class="space-y-2 text-xs text-zinc-300 list-disc list-inside"></ul></div>
+      </div>
+
+      <div class="glass"><h4 class="font-bold text-sm text-emerald-300 mb-3" data-i="checklist"></h4><div id="checklist" class="space-y-2"></div></div>
+    </div>
+
+    <div id="panel-style" class="hidden flex-col gap-4 fade">
+      <div class="glass"><span class="text-[11px] font-semibold text-cyan-300" data-i="styleLbl"></span><h3 id="styleTitle" class="font-extrabold text-xl mt-1">--</h3><div id="styleTags" class="flex flex-wrap gap-2 mt-3"></div><p id="styleDesc" class="text-xs text-zinc-300 mt-3 leading-relaxed"></p></div>
+      <div class="glass"><h4 class="font-bold text-sm mb-3" data-i="palette"></h4><div id="paletteBar" class="h-4 rounded-full overflow-hidden flex mb-4 bg-white/5"></div><div id="paletteSwatches" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div></div>
+      <div class="glass"><h4 class="font-bold text-sm text-indigo-300 mb-2" data-i="materials"></h4><p id="styleLight" class="text-xs text-zinc-300 leading-relaxed">--</p></div>
+      <div class="glass">
+        <div class="flex items-center justify-between mb-2"><h4 class="font-bold text-sm text-emerald-300" data-i="promptTitle"></h4><button onclick="copyPrompt()" class="chip px-3 py-1 rounded-lg text-xs font-bold text-emerald-300" data-i="copy"></button></div>
+        <div id="promptBox" class="mono bg-black/40 border border-white/10 rounded-xl p-3.5 text-xs leading-relaxed select-all">--</div>
+      </div>
+    </div>
+
+    <div id="panel-prompts" class="hidden flex-col gap-4 fade">
+      <div class="glass">
+        <div class="flex items-center justify-between mb-2"><div><h3 class="font-bold text-sm" data-i="sysTitle"></h3><p class="text-xs text-zinc-400" data-i="sysHint"></p></div><button onclick="resetPrompt()" class="chip px-3 py-1.5 rounded-lg text-xs" data-i="reset"></button></div>
+        <textarea id="sysPrompt" rows="12" class="mono w-full mt-3 bg-black/40 border border-white/10 rounded-xl p-3.5 text-xs leading-relaxed focus:outline-none focus:border-indigo-500"></textarea>
+        <div class="flex justify-end mt-3"><button onclick="savePrompt()" class="btn px-5 py-2 rounded-xl text-xs font-bold" data-i="save"></button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="fixed bottom-5 start-5 z-50 hidden px-4 py-3 rounded-2xl bg-zinc-900/95 border border-indigo-500/50 text-xs font-bold shadow-2xl"></div>
+
+<script>
+const T = {
+ar:{title:'مُدقق التصميم الذكي',subtitle:'فحص الإضاءة والظلال، الإملاء، والتايبوجرافي، وتشريح الاستايل',settings:'⚙ الإعدادات',keyLabel:'مفتاح Gemini API',keyHint:'بيتحفظ في متصفحك بس.',save:'حفظ',clear:'مسح',sheetsLabel:'رابط Google Sheets (اختياري)',sheetsHint:'الرابط المنتهي بـ /exec',zone:'منطقة الفحص',noFile:'لم يتم اختيار ملف',dropTitle:'اسحبي التصميم هنا أو اضغطي للاختيار',dropHint:'PNG · JPG · WEBP',category:'تصنيف التصميم',c1:'إعلان سوشيال ميديا',c2:'دمج صور',c3:'واجهة مستخدم UI/UX',c4:'مطبوعات وبوسترات',c5:'هوية بصرية',analyze:'ابدأ الفحص الشامل',samples:'نماذج جاهزة للتجربة',s1:'إعلان بأخطاء',s2:'زجاجي Glass',s3:'شبكة سويسرية',tab1:'التقرير',tab2:'الاستايل',tab3:'الأوامر',sheetsBtn:'حفظ في Sheets',loading:'جاري فحص التصميم...',scoreLabel:'تقييم الجودة البصرية والتقنية',idle:'ارفعي تصميماً لبدء الفحص',idleSum:'إضاءة، ظلال، إملاء، تباين، وتكوين.',lighting:'الإضاءة والظلال',waiting:'في الانتظار',noData:'لا توجد بيانات بعد.',lightOk:'الإضاءة والظلال متناسقة.',spelling:'التدقيق الإملائي',errN:' أخطاء',written:'المكتوب',fix:'التصحيح',type:'نوع الخطأ',noSpell:'مفيش أخطاء إملائية واضحة.',comp:'التكوين والتوازن',typo:'التايبوجرافي والتباين',checklist:'خطة التعديل',critical:'حرج',medium:'متوسط',low:'بسيط',styleLbl:'الأسلوب البصري',palette:'باليتة الألوان (اضغطي للنسخ)',materials:'الخامات والإضاءة',promptTitle:'برومبت لتوليد نفس الاستايل',copy:'نسخ',sysTitle:'تعليمات الذكاء الاصطناعي',sysHint:'عدّلي التعليمات اللي بتروح للموديل.',reset:'استعادة الافتراضي',error:'حصل خطأ: ',close:'إغلاق',connected:'متصل Gemini API',mockMode:'وضع المحاكاة',tSaved:'تم الحفظ',tCleared:'تم مسح المفتاح',tNeed:'ارفعي تصميم أو اختاري نموذج الأول',tMock:'فحص بوضع المحاكاة (ضيفي مفتاح للفحص الحقيقي)',tDone:'تم الفحص بنجاح',tHex:'تم نسخ ',tPrompt:'تم نسخ البرومبت',tReset:'تمت استعادة الافتراضي',tSheetUrl:'ضيفي رابط Sheets في الإعدادات',tSheetFirst:'افحصي تصميم الأول',tSheetOk:'تم الإرسال للشيت',empty:'الموديل رجّع رد فاضي، جربي تاني.',langPrompt:'Write ALL text values in Arabic (clear, Egyptian-friendly).'},
+en:{title:'Smart Design Auditor',subtitle:'Lighting & shadows, spelling, typography and style analysis',settings:'⚙ Settings',keyLabel:'Gemini API key',keyHint:'Stored in your browser only.',save:'Save',clear:'Clear',sheetsLabel:'Google Sheets URL (optional)',sheetsHint:'The URL ending with /exec',zone:'Audit zone',noFile:'No file selected',dropTitle:'Drop your design here or click to choose',dropHint:'PNG · JPG · WEBP',category:'Design category',c1:'Social media ad',c2:'Photo manipulation',c3:'UI/UX design',c4:'Print & poster',c5:'Brand identity',analyze:'Run full audit',samples:'Quick samples',s1:'Flawed ad',s2:'Glass UI',s3:'Swiss grid',tab1:'Report',tab2:'Style',tab3:'Prompts',sheetsBtn:'Save to Sheets',loading:'Auditing your design...',scoreLabel:'Visual & technical quality score',idle:'Upload a design to start',idleSum:'Lighting, shadows, spelling, contrast and layout.',lighting:'Lighting & shadows',waiting:'Waiting',noData:'No data yet.',lightOk:'Lighting and shadows look consistent.',spelling:'Spelling audit',errN:' errors',written:'Written',fix:'Correction',type:'Error type',noSpell:'No obvious spelling errors.',comp:'Composition & balance',typo:'Typography & contrast',checklist:'Action checklist',critical:'Critical',medium:'Medium',low:'Minor',styleLbl:'Visual style',palette:'Color palette (click to copy)',materials:'Materials & lighting',promptTitle:'Prompt to recreate this style',copy:'Copy',sysTitle:'AI instructions',sysHint:'Edit the instructions sent to the model.',reset:'Reset to default',error:'Error: ',close:'Close',connected:'Gemini API connected',mockMode:'Demo mode',tSaved:'Saved',tCleared:'Key cleared',tNeed:'Upload a design or pick a sample first',tMock:'Demo audit (add an API key for real results)',tDone:'Audit complete',tHex:'Copied ',tPrompt:'Prompt copied',tReset:'Defaults restored',tSheetUrl:'Add your Sheets URL in settings first',tSheetFirst:'Audit a design first',tSheetOk:'Sent to Sheets',empty:'Empty response from the model, try again.',langPrompt:'Write ALL text values in English.'}
+};
+const DEFAULT_PROMPT = `You are a Senior Art Director and Photo Retoucher performing a forensic audit of a graphic design.
+Analyze the attached image and return ONLY valid JSON (no markdown) with exactly this structure:
+{
+  "score": 82,
+  "headline": "short verdict",
+  "summary": "two-line executive summary",
+  "lightDirection": "main light direction",
+  "lightingIssues": ["note on cast shadows, contact shadows, light direction"],
+  "spellingErrors": [{ "wrong": "text as written", "correct": "correct text", "type": "error type" }],
+  "compositionNotes": ["margins, alignment, balance"],
+  "typographyNotes": ["fonts, contrast, readability"],
+  "checklist": [{ "priority": "critical", "task": "what to fix" }],
+  "style": {
+    "name": "style name",
+    "tags": ["Tag1", "Tag2"],
+    "description": "visual style and mood",
+    "palette": [{ "hex": "#1505D9", "ratio": 45 }],
+    "lightingAndMaterials": "materials, texture, lighting analysis",
+    "prompt": "Detailed English prompt to recreate this style, no embedded text, 4:5 aspect ratio, studio quality"
+  }
+}
+"priority" must be one of: critical, medium, low. Keep "style.prompt" in English always. Read ALL text in the image (Arabic and English) and check spelling carefully.`;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let lang = localStorage.getItem('audit_lang') || 'ar';
+let imgB64=null, imgMime='image/png', lastReport=null, lastMock=null, hasImage=false;
+const t = k => T[lang][k];
+
+function applyLang(){
+  document.documentElement.lang = lang; document.documentElement.dir = lang==='ar'?'rtl':'ltr';
+  document.querySelectorAll('[data-i]').forEach(e=>e.textContent = t(e.dataset.i));
+  $('langBtn').textContent = lang==='ar'?'EN':'عربي';
+  if(!hasImage) $('meta').textContent = t('noFile');
+  updateBadge(localStorage.getItem('gemini_audit_api_key')||'');
+  if(lastReport) renderReport(lastReport); else renderIdle();
+  switchTab(currentTab);
+}
+function toggleLang(){
+  lang = lang==='ar'?'en':'ar'; localStorage.setItem('audit_lang',lang);
+  if(lastMock) lastReport = getMock(lastMock);
+  applyLang();
+}
+function renderIdle(){
+  $('headline').textContent=t('idle'); $('summary').textContent=t('idleSum'); $('score').textContent='--'; setRing(0);
+  $('lightDir').textContent=t('waiting'); $('lightingList').innerHTML=`<p class="text-zinc-500">${t('noData')}</p>`;
+  $('spellCount').textContent='0'+t('errN'); $('spellBody').innerHTML=`<tr><td colspan="3" class="py-4 text-center text-zinc-500">${t('noData')}</td></tr>`;
+  ['compList','typoList','checklist'].forEach(i=>$(i).innerHTML='');
+}
+function setRing(v){
+  const r=$('ring'); r.style.strokeDashoffset = 264*(1-Math.max(0,Math.min(100,v))/100);
+  r.style.stroke = v>=80?'#34d399':v>=60?'#fbbf24':v>0?'#fb7185':'#6366f1';
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  $('apiKey').value = localStorage.getItem('gemini_audit_api_key')||'';
+  $('sheetsUrl').value = localStorage.getItem('gemini_audit_sheets_url')||'';
+  $('sysPrompt').value = localStorage.getItem('gemini_audit_sys_prompt_v2')||DEFAULT_PROMPT;
+  const z=$('dropZone');
+  ['dragenter','dragover','dragleave','drop'].forEach(e=>z.addEventListener(e,ev=>{ev.preventDefault();ev.stopPropagation()}));
+  z.addEventListener('drop',e=>{if(e.dataTransfer.files[0])processFile(e.dataTransfer.files[0])});
+  applyLang();
+});
+
+function toast(m){const e=$('toast');e.textContent=m;e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),3500)}
+function showError(m){$('errorText').textContent=m;$('errorBox').classList.remove('hidden')}
+function saveSettings(){
+  const k=$('apiKey').value.trim();
+  localStorage.setItem('gemini_audit_api_key',k); localStorage.setItem('gemini_audit_sheets_url',$('sheetsUrl').value.trim());
+  updateBadge(k); toast(t('tSaved'));
+}
+function clearKey(){$('apiKey').value='';localStorage.removeItem('gemini_audit_api_key');updateBadge('');toast(t('tCleared'))}
+function updateBadge(k){
+  const b=$('badge'),d=$('dot');
+  b.className='hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border '+(k?'bg-emerald-500/10 text-emerald-300 border-emerald-500/30':'bg-amber-500/10 text-amber-300 border-amber-500/20');
+  d.className='w-2 h-2 rounded-full '+(k?'bg-emerald-400':'bg-amber-400 animate-pulse');
+  $('badgeText').textContent = k?t('connected'):t('mockMode');
+}
+
+function processFile(file){
+  imgMime=file.type||'image/png';
+  const r=new FileReader();
+  r.onload=e=>{ setImage(e.target.result); lastMock=null; };
+  r.readAsDataURL(file);
+}
+function setImage(url,label){
+  imgB64=url.split(',')[1]; hasImage=true;
+  $('preview').src=url; $('preview').classList.remove('hidden'); $('placeholder').classList.add('hidden');
+  if(label) $('meta').textContent=label;
+  else {const i=new Image(); i.onload=()=>$('meta').textContent=`${i.width}×${i.height}px`; i.src=url;}
+}
+
+function loadPreset(type){
+  const c=document.createElement('canvas'); c.width=800; c.height=1000; const x=c.getContext('2d');
+  if(type==='flawed'){
+    const g=x.createLinearGradient(0,0,800,1000); g.addColorStop(0,'#f97316'); g.addColorStop(1,'#991b1b'); x.fillStyle=g; x.fillRect(0,0,800,1000);
+    x.fillStyle='rgba(0,0,0,.55)'; x.beginPath(); x.ellipse(540,680,170,40,0,0,Math.PI*2); x.fill();
+    x.fillStyle='#fff'; x.beginPath(); x.roundRect(270,360,260,310,30); x.fill();
+    x.textAlign='center'; x.fillStyle='#fef08a'; x.font='bold 64px Cairo, sans-serif'; x.fillText('خصم حصريي 50%',400,160);
+    x.fillStyle='#fca5a5'; x.font='bold 34px Arial'; x.fillText('LIMTED OFER TODAY',400,230);
+    $('designContext').value='Photo Manipulation';
+  } else if(type==='glass'){
+    x.fillStyle='#09090b'; x.fillRect(0,0,800,1000);
+    x.fillStyle='#4f46e5'; x.beginPath(); x.arc(250,350,220,0,Math.PI*2); x.fill();
+    x.fillStyle='#06b6d4'; x.beginPath(); x.arc(580,650,200,0,Math.PI*2); x.fill();
+    x.fillStyle='rgba(255,255,255,.12)'; x.strokeStyle='rgba(255,255,255,.3)'; x.lineWidth=3; x.beginPath(); x.roundRect(120,250,560,500,36); x.fill(); x.stroke();
+    x.fillStyle='#fff'; x.font='bold 48px monospace'; x.textAlign='center'; x.fillText('GLASS UI 2026',400,510);
+    $('designContext').value='UI/UX Design';
+  } else {
+    x.fillStyle='#f4f1ea'; x.fillRect(0,0,800,1000); x.fillStyle='#dc2626'; x.fillRect(60,60,320,320); x.fillStyle='#18181b'; x.fillRect(420,60,320,140);
+    x.font='900 84px Arial'; x.textAlign='left'; x.fillText('HELVETICA',60,520); x.fillText('SYSTEMS',60,610);
+    $('designContext').value='Print & Poster';
+  }
+  imgMime='image/png'; setImage(c.toDataURL('image/png'),'800×1000px'); runAnalysis(type);
+}
+
+async function getModels(key){
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(key)}`);
+  const d=await res.json();
+  if(!res.ok){const e=new Error(d.error?.message||'Could not list models');e.status=res.status;throw e}
+  const av=(d.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/',''));
+  const pref=['gemini-flash-latest','gemini-2.5-flash','gemini-2.0-flash','gemini-2.5-flash-lite','gemini-flash-lite-latest'].filter(n=>av.includes(n));
+  const rest=av.filter(n=>/flash/i.test(n)&&!/(image|tts|live|audio|embed|thinking|omni|preview|exp)/i.test(n)&&!pref.includes(n)).sort().reverse();
+  const list=pref.concat(rest).slice(0,6);
+  return list.length?list:['gemini-flash-latest'];
+}
+async function callGemini(model,key,sys,ctx){
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{role:'user',parts:[{text:`${sys}\n\n${t('langPrompt')}\nDesign category: ${ctx}. Return JSON only.`},{inlineData:{mimeType:imgMime,data:imgB64}}]}],generationConfig:{temperature:.2,responseMimeType:'application/json'}})
+  });
+  const d=await res.json();
+  if(!res.ok){const e=new Error(d.error?.message||'Request failed');e.status=res.status;throw e}
+  const raw=d.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!raw) throw new Error(t('empty'));
+  return JSON.parse(raw.replace(/```json/g,'').replace(/```/g,'').trim());
+}
+async function runAnalysis(preset){
+  if(!imgB64){toast(t('tNeed'));return}
+  $('errorBox').classList.add('hidden');
+  const key=(localStorage.getItem('gemini_audit_api_key')||'').trim();
+  $('loading').classList.remove('hidden'); $('panel-audit').classList.add('hidden'); $('panel-style').classList.add('hidden');
+  if(!key){
+    setTimeout(()=>{
+      lastMock=typeof preset==='string'?preset:'flawed'; renderReport(getMock(lastMock));
+      $('loading').classList.add('hidden'); switchTab('audit'); toast(t('tMock'));
+    },800); return;
+  }
+  lastMock=null; let err=null, models=[];
+  try{models=await getModels(key)}catch(e){err=e}
+  for(const m of (err?[]:models)){
+    try{
+      const r=await callGemini(m,key,$('sysPrompt').value,$('designContext').value);
+      renderReport(r); toast(`${t('tDone')} (${m})`); err=null; break;
+    }catch(e){
+      console.error(m,e); err=e;
+      if(!(e.status===404||e.status===429||/not found|not supported|quota/i.test(e.message))) break;
+    }
+  }
+  $('loading').classList.add('hidden'); switchTab(currentTab==='prompts'?'prompts':'audit');
+  if(err) showError(`${err.message}${err.status?` (HTTP ${err.status})`:''}`);
+}
+
+function renderReport(d){
+  lastReport=d;
+  $('score').textContent=d.score??'--'; setRing(+d.score||0);
+  $('headline').textContent=d.headline||''; $('summary').textContent=d.summary||'';
+  $('lightDir').textContent=d.lightDirection||'—';
+  $('lightingList').innerHTML=(d.lightingIssues||[]).map(i=>`<div class="p-2.5 rounded-xl chip flex gap-2"><span class="text-amber-300 font-bold">•</span><span>${esc(i)}</span></div>`).join('')||`<p class="text-zinc-400">${t('lightOk')}</p>`;
+  const er=d.spellingErrors||[]; $('spellCount').textContent=er.length+t('errN');
+  $('spellBody').innerHTML=er.length?er.map(e=>`<tr class="border-b border-white/5"><td class="py-2.5 px-3 text-rose-300 font-bold line-through">${esc(e.wrong)}</td><td class="py-2.5 px-3 text-emerald-300 font-bold">${esc(e.correct)}</td><td class="py-2.5 px-3 text-zinc-400">${esc(e.type)}</td></tr>`).join(''):`<tr><td colspan="3" class="py-3 text-center text-emerald-300">${t('noSpell')}</td></tr>`;
+  $('compList').innerHTML=(d.compositionNotes||[]).map(n=>`<li>${esc(n)}</li>`).join('');
+  $('typoList').innerHTML=(d.typographyNotes||[]).map(n=>`<li>${esc(n)}</li>`).join('');
+  $('checklist').innerHTML=(d.checklist||[]).map(i=>{
+    const p=String(i.priority||'').toLowerCase(), k=['critical','حرج'].includes(p)?'critical':['low','بسيط'].includes(p)?'low':'medium';
+    const cls={critical:'bg-rose-500/20 text-rose-300 border-rose-500/30',medium:'bg-amber-500/20 text-amber-300 border-amber-500/30',low:'bg-sky-500/20 text-sky-300 border-sky-500/30'}[k];
+    return `<label class="flex items-center justify-between gap-3 p-3 rounded-xl chip cursor-pointer hover:bg-white/10"><div class="flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-indigo-500"><span class="text-xs">${esc(i.task)}</span></div><span class="text-[10px] px-2 py-0.5 rounded border ${cls} shrink-0">${t(k)}</span></label>`;
+  }).join('');
+  const s=d.style;
+  if(s){
+    $('styleTitle').textContent=s.name||'--'; $('styleDesc').textContent=s.description||''; $('styleLight').textContent=s.lightingAndMaterials||''; $('promptBox').textContent=s.prompt||'';
+    $('styleTags').innerHTML=(s.tags||[]).map(x=>`<span class="mono text-[11px] px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">#${esc(x)}</span>`).join('');
+    const pal=s.palette||[];
+    $('paletteBar').innerHTML=pal.map(c=>`<div style="width:${+c.ratio||25}%;background:${esc(c.hex)}"></div>`).join('');
+    $('paletteSwatches').innerHTML=pal.map(c=>`<button onclick="copyHex('${esc(c.hex)}')" class="p-2 rounded-xl chip hover:bg-white/10 flex items-center gap-2.5 text-start"><span class="w-7 h-7 rounded-lg shrink-0 border border-white/20" style="background:${esc(c.hex)}"></span><div><div class="mono text-xs font-bold">${esc(c.hex)}</div><div class="text-[10px] text-zinc-400">${esc(c.ratio)}%</div></div></button>`).join('');
+  }
+  $('panel-audit').classList.add('fade');
+}
+
+async function saveToSheets(){
+  const url=localStorage.getItem('gemini_audit_sheets_url');
+  if(!url){$('drawer').classList.remove('hidden');toast(t('tSheetUrl'));return}
+  if(!lastReport){toast(t('tSheetFirst'));return}
+  try{
+    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      designType:$('designContext').value,score:lastReport.score,
+      topErrors:(lastReport.lightingIssues||[]).concat((lastReport.spellingErrors||[]).map(e=>`${e.wrong} -> ${e.correct}`)).join(' | '),
+      styleName:lastReport.style?.name||'',prompt:lastReport.style?.prompt||''})});
+    toast(t('tSheetOk'));
+  }catch(e){showError(e.message)}
+}
+
+let currentTab='audit';
+function switchTab(n){
+  currentTab=n;
+  ['audit','style','prompts'].forEach(x=>{
+    const on=x===n;
+    $('tab-'+x).className='flex-1 py-2.5 rounded-xl text-xs font-bold '+(on?'tab-on':'text-zinc-400 hover:bg-white/5');
+    $('panel-'+x).classList.toggle('hidden',!on); $('panel-'+x).classList.toggle('flex',on);
+  });
+}
+function copyHex(h){navigator.clipboard.writeText(h);toast(t('tHex')+h)}
+function copyPrompt(){navigator.clipboard.writeText($('promptBox').textContent);toast(t('tPrompt'))}
+function savePrompt(){localStorage.setItem('gemini_audit_sys_prompt_v2',$('sysPrompt').value);toast(t('tSaved'))}
+function resetPrompt(){$('sysPrompt').value=DEFAULT_PROMPT;localStorage.setItem('gemini_audit_sys_prompt_v2',DEFAULT_PROMPT);toast(t('tReset'))}
+
+function getMock(type){
+  const ar=lang==='ar', f=type==='flawed';
+  return {
+    score:f?54:91,
+    headline:f?(ar?'أخطاء في اتجاه الظلال وتدقيق النصوص':'Shadow direction and copy errors'):(ar?'تكوين متوازن واستايل حديث':'Balanced layout, modern style'),
+    summary:f?(ar?'الظل الساقط عكس مصدر الإضاءة، وفي خطأين إملائيين في العناوين.':'The cast shadow fights the light source, and two headline typos need fixing.'):(ar?'العناصر ملتزمة بالشبكة مع تباين ممتاز.':'Elements follow the grid with excellent contrast.'),
+    lightDirection:ar?'أعلى اليمين (45°)':'Top right (45°)',
+    lightingIssues:f?(ar?['الظل الساقط في نفس اتجاه الضوء بدل ما يتعكس لليسار.','مفيش Contact Shadow تحت المنتج فبيبان طاير.']:['Cast shadow falls toward the light instead of away from it.','No contact shadow under the product, so it looks like it floats.']):(ar?['الإضاءة المحيطية متوازنة.']:['Ambient light is well balanced.']),
+    spellingErrors:f?[{wrong:'خصم حصريي',correct:'خصم حصري',type:ar?'تكرار حرف':'Repeated letter'},{wrong:'LIMTED OFER',correct:'LIMITED OFFER',type:ar?'حروف ناقصة':'Missing letters'}]:[],
+    compositionNotes:ar?['الهامش العلوي أضيق من السفلي.','نقطة التركيز واضحة في المنتصف.']:['Top margin is tighter than the bottom.','Focal point is clear in the center.'],
+    typographyNotes:ar?['تباين النص الفرعي ضعيف على الخلفية.']:['Secondary text has weak contrast on the background.'],
+    checklist:ar?[{priority:'critical',task:'تصحيح الكلمات الإملائية.'},{priority:'critical',task:'عكس الظل وإضافة Contact Shadow.'},{priority:'medium',task:'رفع تباين النص الفرعي.'}]:[{priority:'critical',task:'Fix the spelling errors.'},{priority:'critical',task:'Flip the shadow and add a contact shadow.'},{priority:'medium',task:'Raise secondary text contrast.'}],
+    style:{name:type==='glass'?'Dark Glassmorphism UI':'Vibrant Commercial Promo',tags:['BoldTypography','StudioLighting','HighContrast'],
+      description:ar?'أسلوب إعلاني بتدرجات دافئة مع إبراز المنتج في المنتصف.':'Commercial look with warm gradients and a centered hero product.',
+      palette:[{hex:'#F97316',ratio:45},{hex:'#991B1B',ratio:30},{hex:'#FEF08A',ratio:15},{hex:'#FFFFFF',ratio:10}],
+      lightingAndMaterials:ar?'إضاءة استوديو أمامية مع خلفية متدرجة ناعمة.':'Frontal studio light over a soft gradient background.',
+      prompt:'Commercial product poster, warm orange to crimson gradient background, dramatic studio rim lighting, clean minimalist composition, no embedded text, 4:5 aspect ratio'}
+  };
+}
+</script>
+</body>
+</html>

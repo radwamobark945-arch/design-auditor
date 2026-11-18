@@ -64,7 +64,7 @@
 
 <div id="errorBox" class="hidden max-w-[1400px] mx-auto px-4 mt-4">
   <div class="flex items-start justify-between gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/40 text-rose-200 text-xs">
-    <div class="min-w-0"><b data-i="error"></b><span id="errorText" class="mono block mt-1 break-words"></span></div>
+    <div class="min-w-0"><b data-i="error"></b><span id="errorText" class="mono block mt-1 break-words whitespace-pre-line"></span></div>
     <button onclick="$('errorBox').classList.add('hidden')" class="chip px-2.5 py-1 rounded-lg shrink-0" data-i="close"></button>
   </div>
 </div>
@@ -322,10 +322,24 @@ async function callGemini(model,key,sys,ctx){
   if(!raw) throw new Error(t('empty'));
   return JSON.parse(raw.replace(/```json/g,'').replace(/```/g,'').trim());
 }
+async function callRetry(m,key,sys,ctx){
+  for(let i=0;;i++){
+    try{ return await callGemini(m,key,sys,ctx); }
+    catch(e){
+      if((e.status===503||e.status===500)&&i<2){ await new Promise(r=>setTimeout(r,2500*(i+1))); continue; }
+      throw e;
+    }
+  }
+}
 async function runAnalysis(preset){
   if(!imgB64){toast(t('tNeed'));return}
   $('errorBox').classList.add('hidden');
   const key=(localStorage.getItem('gemini_audit_api_key')||'').trim();
+  if(!key && typeof preset!=='string'){
+    $('drawer').classList.remove('hidden');
+    showError(lang==='ar'?'مفيش مفتاح API محفوظ في المتصفح ده، فالنتايج هتبقى تجريبية ومش بتاعة تصميمك. ضيفي المفتاح من الإعدادات وبعدين اعملي الفحص.':'No API key is saved in this browser, so results would be fake demo data, not your design. Add your key in Settings, then run the audit.');
+    return;
+  }
   $('loading').classList.remove('hidden'); $('panel-audit').classList.add('hidden'); $('panel-style').classList.add('hidden');
   if(!key){
     setTimeout(()=>{
@@ -337,15 +351,18 @@ async function runAnalysis(preset){
   try{models=await getModels(key)}catch(e){err=e}
   for(const m of (err?[]:models)){
     try{
-      const r=await callGemini(m,key,$('sysPrompt').value,$('designContext').value);
+      const r=await callRetry(m,key,$('sysPrompt').value,$('designContext').value);
       renderReport(r); toast(`${t('tDone')} (${m})`); err=null; break;
     }catch(e){
       console.error(m,e); err=e;
-      if(!(e.status===404||e.status===429||/not found|not supported|quota/i.test(e.message))) break;
+      if(!(e.status===404||e.status===429||e.status===503||e.status===500||/not found|not supported|quota|high demand|overloaded/i.test(e.message))) break;
     }
   }
   $('loading').classList.add('hidden'); switchTab(currentTab==='prompts'?'prompts':'audit');
-  if(err) showError(`${err.message}${err.status?` (HTTP ${err.status})`:''}`);
+  if(err){
+    const hint=(err.status===503||err.status===500)?(lang==='ar'?'\n← ضغط مؤقت على سيرفرات Google. استني دقيقة وجربي تاني.':'\n← Temporary load on Google servers. Wait a minute and try again.'):'';
+    showError(`${err.message}${err.status?` (HTTP ${err.status})`:''}${hint}`);
+  }
 }
 
 function renderReport(d){
